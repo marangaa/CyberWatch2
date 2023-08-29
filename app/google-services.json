@@ -1,0 +1,68 @@
+{
+  "project_info": {
+    "project_number": "859955977713",
+    "project_id": "cyberwatch-e27fc",
+    "storage_bucket": "cyberwatch-e27fc.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:859955977713:android:64b694f97d83a91708f850",
+        "android_client_info": {
+          "package_name": "com.example.cyberwatch"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "859955977713-n83u28clgv1r2bg4cko6bdc2peessnkp.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBrzIBBli77qBFK7CG-O_Y5dfY5wvdoEI4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "859955977713-n83u28clgv1r2bg4cko6bdc2peessnkp.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:859955977713:android:28013e076ec0bc7208f850",
+        "android_client_info": {
+          "package_name": "com.example.cyberwatch2"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "859955977713-n83u28clgv1r2bg4cko6bdc2peessnkp.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBrzIBBli77qBFK7CG-O_Y5dfY5wvdoEI4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "859955977713-n83u28clgv1r2bg4cko6bdc2peessnkp.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
