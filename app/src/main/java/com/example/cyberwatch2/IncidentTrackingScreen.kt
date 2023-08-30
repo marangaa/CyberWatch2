@@ -1,15 +1,25 @@
 package com.example.cyberwatch2
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.*
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.google.firebase.firestore.ktx.firestore
@@ -19,6 +29,7 @@ import com.google.firebase.ktx.Firebase
 fun IncidentTrackingScreen() {
     val firestore = Firebase.firestore
     var incidents by remember { mutableStateOf(emptyList<Incident>()) }
+    var isLoading by remember { mutableStateOf(true) }
 
     // Fetch incident submissions from Firebase Firestore and update the incidents list
     LaunchedEffect(Unit) {
@@ -31,9 +42,11 @@ fun IncidentTrackingScreen() {
                     fetchedIncidents.add(incident)
                 }
                 incidents = fetchedIncidents
+                isLoading = false
             }
             .addOnFailureListener {
                 // Handle error
+                isLoading = false
             }
     }
 
@@ -41,12 +54,23 @@ fun IncidentTrackingScreen() {
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp)
     ) {
-        items(incidents) { incident ->
-            IncidentItem(incident)
-            Divider(modifier = Modifier.padding(vertical = 8.dp))
+        if (isLoading) {
+            items(1) {
+                // Skeleton loading animation or loading indicator can be added here
+            }
+        } else if (incidents.isEmpty()) {
+            item {
+                // Display an empty state message
+            }
+        } else {
+            items(incidents) { incident ->
+                IncidentItem(incident)
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
+            }
         }
     }
 }
+
 
 data class Incident(
     val title: String = "",
