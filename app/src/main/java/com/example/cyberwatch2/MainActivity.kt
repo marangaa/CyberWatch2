@@ -7,10 +7,13 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.runtime.Composable
 import androidx.core.view.WindowCompat
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.google.firebase.FirebaseApp
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 
@@ -43,9 +46,7 @@ fun ReportingSystemApp() {
     NavHost(navController = navController, startDestination = Screen.Login.route) {
         composable(Screen.Login.route) {
             LoginScreen(
-                onLoginClick = { email, password ->
-                    // Implement login logic here
-                    // Navigate to the next screen after successful login
+                onLoginClick = { _, _ ->
                     navController.navigate(Screen.IncidentReporting.route)
                 },
                 onCreateAccountClick = {
@@ -57,28 +58,7 @@ fun ReportingSystemApp() {
             )
         }
         composable(Screen.IncidentReporting.route) {
-            IncidentReportingScreen { title, description, category ->
-                // Implement incident reporting logic here
-                // For example, store incident details in Firebase
-                // After submission, navigate to appropriate screen
-                // navController.navigate(com.example.cyberwatch2.Screen.SomeOtherScreen.route)
-                val firestore = Firebase.firestore
-                val incidentsCollection = firestore.collection("incidents")
-
-                val incidentData = hashMapOf(
-                    "title" to title,
-                    "description" to description,
-                    "category" to category
-                )
-
-                incidentsCollection.add(incidentData)
-                    .addOnSuccessListener {
-                        navController.navigate(Screen.IncidentTracking.route)
-                    }
-                    .addOnFailureListener {
-                        Log.e("FirestoreError", "Failed to add incident: $it")
-                    }
-            }
+            IncidentReportingScreen(navController = navController)
         }
         composable(Screen.Registration.route) {
             RegistrationScreen {
@@ -92,7 +72,14 @@ fun ReportingSystemApp() {
             IncidentTrackingScreen()
         }
         composable(Screen.Chat.route) {
-            ChatScreen()
+            // Firebase Authentication
+            val auth = Firebase.auth
+            val user = auth.currentUser
+            val userId = auth.currentUser?.uid
+            val selectedChatId = "your_selected_chat_id" // Replace with the actual selected chat ID
+            val firebaseDatabase = FirebaseDatabase.getInstance()
+
+            ChatScreen(selectedChatId, userId, firebaseDatabase)
         }
         composable(Screen.ForgotPassword.route) {
             ForgotPasswordScreen()

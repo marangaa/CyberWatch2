@@ -1,131 +1,158 @@
 package com.example.cyberwatch2
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
-import com.google.firebase.FirebaseApp
-import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.DatabaseReference
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 import com.google.firebase.ktx.Firebase
+import org.w3c.dom.Text
 
-
-@Composable
-fun ChatScreen() {
-    val firestore = Firebase.firestore
-    val messagesCollection = firestore.collection("messages")
-
-    var message by remember { mutableStateOf("") }
-    var messages by remember { mutableStateOf(emptyList<Message>()) }
-
-    // Fetch chat messages from Firebase Firestore and update the messages list
-    LaunchedEffect(Unit) {
-        messagesCollection.orderBy("timestamp")
-            .addSnapshotListener { snapshot, exception ->
-                if (exception != null) {
-                    // Handle error
-                    return@addSnapshotListener
-                }
-                val fetchedMessages = mutableListOf<Message>()
-                for (document in snapshot!!.documents) {
-                    val chatMessage = document.toObject(Message::class.java)
-                    fetchedMessages.add(chatMessage!!)
-                }
-                messages = fetchedMessages
-            }
-    }
-
-
-    Column(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        MessageList(messages)
-        Spacer(modifier = Modifier.height(16.dp))
-        SendMessageArea(
-            message = message,
-            onMessageChange = { message = it },
-            onSendClick = {
-                if (message.isNotBlank()) {
-                    val newMessage = Message(text = message)
-                    messagesCollection.add(newMessage)
-                    message = ""
-                }
-            }
-        )
-    }
-}
-
-data class Message(
-    val text: String = "",
-    val timestamp: Long = System.currentTimeMillis()
+// ChatMessage data class to represent individual chat messages
+data class ChatMessage(
+    val senderId: String,
+    val content: String,
+    val timestamp: Long
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MessageList(messages: List<Message>) {
-    LazyColumn(
+fun ChatScreen(
+    chatId: String, // Use chatId to uniquely identify the chat
+    currentUser: String?, // Current user's ID
+    firebaseDatabase: FirebaseDatabase
+) {
+    var messageText by remember { mutableStateOf("") }
+    val messages = remember { mutableStateListOf<ChatMessage>() }
+
+    // Real-time message listener
+    val databaseReference = firebaseDatabase.getReference("chats/$chatId/messages")
+
+    LaunchedEffect(Unit) {
+        val eventListener = object : ValueEventListener {
+            override fun onDataChange(dataSnapshot: DataSnapshot) {
+                val newMessages = dataSnapshot.children.mapNotNull { snapshot ->
+                    snapshot.getValue(ChatMessage::class.java)
+                }
+                messages.clear()
+                messages.addAll(newMessages)
+            }
+
+            override fun onCancelled(databaseError: DatabaseError) {
+                // Handle error
+            }
+        }
+
+        databaseReference.addValueEventListener(eventListener)
+//        DisposableEffect(Unit){
+//            onDispose {
+//                // Remove the listener when the Composable is disposed
+//                databaseReference.removeEventListener(eventListener)
+//            }
+//
+//        }
+    }
+
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        items(messages) { message ->
-            Text(
-                text = message.text,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp)
-            )
+        // Chat messages
+        LazyColumn {
+            items(messages) { message ->
+                // Display chat messages here
+                Text(text = message.content)
+            }
+        }
+
+        // Message input field
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                // Chat messages
+                LazyColumn {
+                    items(messages) { message ->
+                        // Display chat messages here
+                        Text(text = message.content)
+                    }
+                }
+
+                // Message input field
+                OutlinedTextField(
+                    value = messageText,
+                    onValueChange = { newValue ->
+                        messageText = newValue
+                    },
+                    textStyle = TextStyle.Default.copy(
+                        color = LocalContentColor.current
+                    ),
+                    singleLine = true,
+                    placeholder = {
+                        Text("Type your message...")
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp)
+                )
+
+                Button(
+                    onClick = {
+                        // Send the message to Firebase Realtime Database
+                        if (currentUser != null) {
+                            sendMessage(currentUser, messageText, databaseReference)
+                        }
+                        messageText = ""
+                    },
+                    modifier = Modifier
+                        .align(Alignment.End)
+                        .padding(8.dp)
+                ) {
+                    Text("Send")
+                }
+            }
         }
     }
 }
 
-@Composable
-fun SendMessageArea(
-    message: String,
-    onMessageChange: (String) -> Unit,
-    onSendClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp)
-    ) {
-        BasicTextField(
-            value = message,
-            onValueChange = { onMessageChange(it) },
-            modifier = Modifier
-                .weight(1f)
-                .background(Color.White),
-            textStyle = MaterialTheme.typography.bodyMedium,
-            singleLine = true,
-            maxLines = 1
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Button(
-            onClick = onSendClick,
-            enabled = message.isNotBlank()
-        ) {
-            Text("Send")
-        }
+fun sendMessage(senderId: String, content: String, databaseReference: DatabaseReference) {
+    if (content.isNotBlank()) {
+        val message = ChatMessage(senderId, content, System.currentTimeMillis())
+        val newMessageReference = databaseReference.push()
+        newMessageReference.setValue(message)
     }
 }
